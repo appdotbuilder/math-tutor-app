@@ -1,10 +1,19 @@
+import { db } from '../db';
+import { mathProblemsTable } from '../db/schema';
 import { type GetMathProblemByIdInput } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export const deleteMathProblem = async (input: GetMathProblemByIdInput): Promise<boolean> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is deleting a math problem from the database by its ID.
-    // Should return true if the problem was found and deleted, false if not found.
-    
-    // Placeholder implementation
-    return Promise.resolve(input.id > 0);
+  try {
+    // Delete the math problem by ID
+    const result = await db.delete(mathProblemsTable)
+      .where(eq(mathProblemsTable.id, input.id))
+      .execute();
+
+    // Check if any rows were affected (i.e., if the problem existed and was deleted)
+    return (result.rowCount ?? 0) > 0;
+  } catch (error) {
+    console.error('Math problem deletion failed:', error);
+    throw error;
+  }
 };

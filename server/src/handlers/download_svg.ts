@@ -1,19 +1,39 @@
+import { db } from '../db';
+import { mathProblemsTable } from '../db/schema';
+import { eq } from 'drizzle-orm';
 import { type GetMathProblemByIdInput, type SvgDownloadResponse } from '../schema';
 
 export const downloadSvg = async (input: GetMathProblemByIdInput): Promise<SvgDownloadResponse | null> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is preparing SVG content for download by fetching
-    // the math problem by ID and returning the SVG content with appropriate metadata
-    // for file download (filename, content, mimeType).
-    
-    // Placeholder implementation
-    if (input.id === 1) {
-        return Promise.resolve({
-            filename: `math_problem_${input.id}.svg`,
-            content: '<svg width="200" height="150" xmlns="http://www.w3.org/2000/svg"><polygon points="50,120 50,50 130,120" fill="lightblue" stroke="blue" stroke-width="2"/><text x="40" y="140">A</text><text x="40" y="45">B</text><text x="135" y="140">C</text></svg>',
-            mimeType: 'image/svg+xml'
-        } as SvgDownloadResponse);
+  try {
+    // Fetch math problem by ID
+    const results = await db.select()
+      .from(mathProblemsTable)
+      .where(eq(mathProblemsTable.id, input.id))
+      .execute();
+
+    // Return null if problem not found
+    if (results.length === 0) {
+      return null;
     }
+
+    const mathProblem = results[0];
+
+    // Create sanitized filename from title and ID
+    const sanitizedTitle = mathProblem.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '');
     
-    return Promise.resolve(null);
+    const filename = `math_problem_${input.id}_${sanitizedTitle}.svg`;
+
+    return {
+      filename,
+      content: mathProblem.svg_content,
+      mimeType: 'image/svg+xml'
+    };
+  } catch (error) {
+    console.error('SVG download failed:', error);
+    throw error;
+  }
 };

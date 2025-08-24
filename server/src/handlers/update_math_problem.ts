@@ -1,19 +1,43 @@
+import { db } from '../db';
+import { mathProblemsTable } from '../db/schema';
 import { type UpdateMathProblemInput, type MathProblem } from '../schema';
+import { eq } from 'drizzle-orm';
 
 export const updateMathProblem = async (input: UpdateMathProblemInput): Promise<MathProblem | null> => {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is updating an existing math problem in the database
-    // with the provided fields. Only the fields present in the input should be updated.
-    // Should return the updated math problem if found, or null if not found.
-    
-    return Promise.resolve({
-        id: input.id,
-        title: input.title || "Updated Math Problem",
-        question: input.question || "Updated question",
-        type: input.type || "triangle_rectangle",
-        explanation: input.explanation || "Updated explanation",
-        svg_content: input.svg_content || '<svg></svg>',
-        created_at: new Date(Date.now() - 86400000), // Yesterday
-        updated_at: new Date() // Now
-    } as MathProblem);
+  try {
+    // Build the update object with only provided fields
+    const updateData: Partial<typeof mathProblemsTable.$inferInsert> = {
+      updated_at: new Date() // Always update the timestamp
+    };
+
+    // Only include fields that are provided in the input
+    if (input.title !== undefined) {
+      updateData.title = input.title;
+    }
+    if (input.question !== undefined) {
+      updateData.question = input.question;
+    }
+    if (input.type !== undefined) {
+      updateData.type = input.type;
+    }
+    if (input.explanation !== undefined) {
+      updateData.explanation = input.explanation;
+    }
+    if (input.svg_content !== undefined) {
+      updateData.svg_content = input.svg_content;
+    }
+
+    // Update the math problem
+    const result = await db.update(mathProblemsTable)
+      .set(updateData)
+      .where(eq(mathProblemsTable.id, input.id))
+      .returning()
+      .execute();
+
+    // Return the updated record if found, null otherwise
+    return result.length > 0 ? result[0] : null;
+  } catch (error) {
+    console.error('Math problem update failed:', error);
+    throw error;
+  }
 };
